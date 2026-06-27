@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KIPP vs IDEA — Florida Proficiency Trends 2021–2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--ink:#15233b;--muted:#64748b;--line:#e5e9f0;--radius:12px;}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.45}
+.wrap{max-width:1240px;margin:0 auto;padding:18px}
+header.hero{background:linear-gradient(135deg,#15233b,#243b5e);color:#fff;border-radius:var(--radius);padding:22px 26px;margin-bottom:16px}
+header.hero h1{font-size:21px;font-weight:700}
+header.hero p{font-size:13px;opacity:.85;margin-top:5px;max-width:920px}
+header.hero a{color:#bcd2f5}
+.controls{display:flex;flex-wrap:wrap;gap:18px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px;margin-bottom:16px}
+.grp{display:flex;flex-direction:column;gap:6px}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:7px 13px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+.seg button.active{background:var(--ink);color:#fff}
+.regtoggles{display:flex;flex-wrap:wrap;gap:10px}
+.chip{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;background:#fff;border:1px solid var(--line);border-radius:20px;padding:6px 12px;cursor:pointer;user-select:none}
+.chip .dot{width:11px;height:11px;border-radius:50%}
+.chip.off{opacity:.4;text-decoration:line-through}
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tabs button{border:1px solid var(--line);background:#fff;color:var(--muted);font-weight:600;font-size:13px;padding:9px 16px;border-radius:8px;cursor:pointer}
+.tabs button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.panel{display:none}.panel.active{display:block}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-left-width:5px;border-radius:var(--radius);padding:15px 18px}
+.kpi .name{font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px}
+.kpi .val{font-size:30px;font-weight:800;margin-top:6px}
+.kpi .sub{font-size:12px;color:var(--muted);margin-top:3px}
+.kpi b.pos{color:#16a34a}.kpi b.neg{color:#dc2626}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px}
+.card h3{font-size:14px;font-weight:700;margin-bottom:4px}
+.card .hint{font-size:12px;color:var(--muted);margin-bottom:12px}
+.chartbox{position:relative;height:440px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+td.lt,th.lt{text-align:left;font-weight:600}
+.cell{display:inline-block;min-width:30px}
+.delta{font-weight:700}
+.up{color:#16a34a}.down{color:#dc2626}
+.note{background:#fff8e6;border:1px solid #f5e3a8;border-radius:10px;padding:12px 16px;font-size:12.5px;color:#5b4d1e;margin-bottom:16px}
+footer{font-size:12px;color:var(--muted);text-align:center;padding:14px 0 30px}
+footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <h1>KIPP vs IDEA — Florida Proficiency Trends, 2021–2026</h1>
+  <p>Six-year history of % proficient (Level 3+) by network, with year-over-year growth. Companion to the <a href="./index.html">2026 snapshot dashboard</a>. Enrollment-weighted across all campuses, grades 3–8. Source: Florida DOE school-level results.</p>
+</header>
+
+<div class="note" id="testnote">
+  <b>Read the 2022→2023 jump with care:</b> 2021–2022 used the <b>FSA</b>; Florida switched to the <b>FAST / B.E.S.T.</b> assessment in 2023, so part of that one-year change reflects the test change, not only school performance. 2021 was also a COVID-depressed year. IDEA campuses phased in over 2022–2024, so early years are blank for networks that didn't yet exist.
+</div>
+
+<div class="controls">
+  <div class="grp">
+    <label class="lbl">Subject</label>
+    <div class="seg" id="subjSeg">
+      <button data-subj="COMBINED" class="active">ELA + Math</button>
+      <button data-subj="ELA">ELA</button>
+      <button data-subj="MATH">Math</button>
+      <button data-subj="ALG1">Algebra 1 EOC</button>
+    </div>
+  </div>
+  <div class="grp" style="flex:1">
+    <label class="lbl">Networks (click to show / hide)</label>
+    <div class="regtoggles" id="regToggles"></div>
+  </div>
+</div>
+
+<div class="tabs" id="tabs">
+  <button data-tab="trend" class="active">Trend over time</button>
+  <button data-tab="yoy">Year-over-year growth</button>
+  <button data-tab="table">Data table</button>
+</div>
+
+<div class="panel active" id="panel-trend">
+  <div class="kpis" id="kpis"></div>
+  <div class="card">
+    <h3>% proficient over time — <span class="subjName"></span></h3>
+    <div class="hint">Each point is the enrollment-weighted % of students at Level 3 or above. Gaps = network/campuses not yet open that year.</div>
+    <div class="chartbox"><canvas id="trendChart"></canvas></div>
+  </div>
+</div>
+
+<div class="panel" id="panel-yoy">
+  <div class="card">
+    <h3>Year-over-year change (percentage points) — <span class="subjName"></span></h3>
+    <div class="hint">Bars show the change in % proficient vs the prior year. Green = improvement, red = decline.</div>
+    <div class="chartbox"><canvas id="yoyChart"></canvas></div>
+  </div>
+</div>
+
+<div class="panel" id="panel-table">
+  <div class="card">
+    <h3>Levels &amp; year-over-year growth — <span class="subjName"></span></h3>
+    <div class="hint">Each cell: % proficient, with the YoY change beneath. Last column = total change since the network's first year.</div>
+    <div style="overflow-x:auto"><table id="dataTable"></table></div>
+  </div>
+</div>
+
+<footer>
+  Built from Florida DOE results pages 2021–2026 (<a href="https://www.fldoe.org/accountability/assessments/k-12-student-assessment/results/" target="_blank" rel="noopener">fldoe.org</a>). Algebra 1 EOC is all-grades first-time testers. IDEA Lakeland (Polk Co.) included in IDEA Tampa Bay. Data pulled June 27, 2026.
+</footer>
+</div>
+
+<script>
+const DATA = {"years": ["2021", "2022", "2023", "2024", "2025", "2026"], "networks": ["KIPP Miami", "KIPP Jacksonville", "IDEA Jacksonville", "IDEA Tampa Bay"], "rows": [{"year": "2021", "network": "KIPP Miami", "subj": "ELA", "n": 283, "p3": 16.3}, {"year": "2021", "network": "KIPP Jacksonville", "subj": "ELA", "n": 893, "p3": 21.7}, {"year": "2021", "network": "KIPP Miami", "subj": "MATH", "n": 283, "p3": 13.4}, {"year": "2021", "network": "KIPP Jacksonville", "subj": "MATH", "n": 858, "p3": 15.9}, {"year": "2021", "network": "KIPP Miami", "subj": "COMBINED", "n": 566, "p3": 14.8}, {"year": "2021", "network": "KIPP Jacksonville", "subj": "COMBINED", "n": 1751, "p3": 18.9}, {"year": "2021", "network": "KIPP Jacksonville", "subj": "ALG1", "n": 47, "p3": 57.0}, {"year": "2022", "network": "KIPP Miami", "subj": "ELA", "n": 516, "p3": 15.8}, {"year": "2022", "network": "KIPP Jacksonville", "subj": "ELA", "n": 1190, "p3": 21.4}, {"year": "2022", "network": "IDEA Tampa Bay", "subj": "ELA", "n": 249, "p3": 28.2}, {"year": "2022", "network": "KIPP Miami", "subj": "MATH", "n": 514, "p3": 22.0}, {"year": "2022", "network": "KIPP Jacksonville", "subj": "MATH", "n": 1137, "p3": 17.1}, {"year": "2022", "network": "IDEA Tampa Bay", "subj": "MATH", "n": 248, "p3": 26.5}, {"year": "2022", "network": "KIPP Miami", "subj": "COMBINED", "n": 1030, "p3": 18.9}, {"year": "2022", "network": "KIPP Jacksonville", "subj": "COMBINED", "n": 2327, "p3": 19.3}, {"year": "2022", "network": "IDEA Tampa Bay", "subj": "COMBINED", "n": 497, "p3": 27.3}, {"year": "2022", "network": "KIPP Jacksonville", "subj": "ALG1", "n": 99, "p3": 32.0}, {"year": "2023", "network": "KIPP Miami", "subj": "ELA", "n": 605, "p3": 23.5}, {"year": "2023", "network": "KIPP Jacksonville", "subj": "ELA", "n": 1284, "p3": 20.2}, {"year": "2023", "network": "IDEA Tampa Bay", "subj": "ELA", "n": 694, "p3": 29.9}, {"year": "2023", "network": "IDEA Jacksonville", "subj": "ELA", "n": 231, "p3": 39.1}, {"year": "2023", "network": "KIPP Miami", "subj": "MATH", "n": 585, "p3": 33.7}, {"year": "2023", "network": "KIPP Jacksonville", "subj": "MATH", "n": 1228, "p3": 18.5}, {"year": "2023", "network": "IDEA Tampa Bay", "subj": "MATH", "n": 689, "p3": 40.7}, {"year": "2023", "network": "IDEA Jacksonville", "subj": "MATH", "n": 229, "p3": 66.8}, {"year": "2023", "network": "KIPP Miami", "subj": "COMBINED", "n": 1190, "p3": 28.5}, {"year": "2023", "network": "KIPP Jacksonville", "subj": "COMBINED", "n": 2512, "p3": 19.3}, {"year": "2023", "network": "IDEA Tampa Bay", "subj": "COMBINED", "n": 1383, "p3": 35.3}, {"year": "2023", "network": "IDEA Jacksonville", "subj": "COMBINED", "n": 460, "p3": 52.9}, {"year": "2023", "network": "KIPP Miami", "subj": "ALG1", "n": 18, "p3": 83.0}, {"year": "2023", "network": "KIPP Jacksonville", "subj": "ALG1", "n": 176, "p3": 29.3}, {"year": "2024", "network": "KIPP Miami", "subj": "ELA", "n": 716, "p3": 32.8}, {"year": "2024", "network": "KIPP Jacksonville", "subj": "ELA", "n": 1461, "p3": 26.3}, {"year": "2024", "network": "IDEA Jacksonville", "subj": "ELA", "n": 752, "p3": 40.1}, {"year": "2024", "network": "IDEA Tampa Bay", "subj": "ELA", "n": 1025, "p3": 30.5}, {"year": "2024", "network": "KIPP Miami", "subj": "MATH", "n": 662, "p3": 40.7}, {"year": "2024", "network": "KIPP Jacksonville", "subj": "MATH", "n": 1384, "p3": 25.1}, {"year": "2024", "network": "IDEA Jacksonville", "subj": "MATH", "n": 749, "p3": 52.5}, {"year": "2024", "network": "IDEA Tampa Bay", "subj": "MATH", "n": 1021, "p3": 39.3}, {"year": "2024", "network": "KIPP Miami", "subj": "COMBINED", "n": 1378, "p3": 36.6}, {"year": "2024", "network": "KIPP Jacksonville", "subj": "COMBINED", "n": 2845, "p3": 25.7}, {"year": "2024", "network": "IDEA Jacksonville", "subj": "COMBINED", "n": 1501, "p3": 46.3}, {"year": "2024", "network": "IDEA Tampa Bay", "subj": "COMBINED", "n": 2046, "p3": 34.9}, {"year": "2024", "network": "KIPP Miami", "subj": "ALG1", "n": 51, "p3": 82.0}, {"year": "2024", "network": "KIPP Jacksonville", "subj": "ALG1", "n": 116, "p3": 48.6}, {"year": "2025", "network": "KIPP Miami", "subj": "ELA", "n": 866, "p3": 41.3}, {"year": "2025", "network": "KIPP Jacksonville", "subj": "ELA", "n": 1535, "p3": 29.6}, {"year": "2025", "network": "IDEA Jacksonville", "subj": "ELA", "n": 1167, "p3": 39.3}, {"year": "2025", "network": "IDEA Tampa Bay", "subj": "ELA", "n": 1450, "p3": 32.9}, {"year": "2025", "network": "KIPP Miami", "subj": "MATH", "n": 796, "p3": 41.5}, {"year": "2025", "network": "KIPP Jacksonville", "subj": "MATH", "n": 1413, "p3": 27.2}, {"year": "2025", "network": "IDEA Jacksonville", "subj": "MATH", "n": 1089, "p3": 43.2}, {"year": "2025", "network": "IDEA Tampa Bay", "subj": "MATH", "n": 1373, "p3": 37.8}, {"year": "2025", "network": "KIPP Miami", "subj": "COMBINED", "n": 1662, "p3": 41.4}, {"year": "2025", "network": "KIPP Jacksonville", "subj": "COMBINED", "n": 2948, "p3": 28.5}, {"year": "2025", "network": "IDEA Jacksonville", "subj": "COMBINED", "n": 2256, "p3": 41.2}, {"year": "2025", "network": "IDEA Tampa Bay", "subj": "COMBINED", "n": 2823, "p3": 35.3}, {"year": "2025", "network": "KIPP Miami", "subj": "ALG1", "n": 66, "p3": 62.0}, {"year": "2025", "network": "KIPP Jacksonville", "subj": "ALG1", "n": 232, "p3": 43.3}, {"year": "2025", "network": "IDEA Jacksonville", "subj": "ALG1", "n": 85, "p3": 85.6}, {"year": "2025", "network": "IDEA Tampa Bay", "subj": "ALG1", "n": 169, "p3": 67.7}, {"year": "2026", "network": "KIPP Miami", "subj": "ELA", "n": 875, "p3": 47.9}, {"year": "2026", "network": "KIPP Miami", "subj": "MATH", "n": 781, "p3": 51.1}, {"year": "2026", "network": "KIPP Miami", "subj": "ALG1", "n": 84, "p3": 88.0}, {"year": "2026", "network": "KIPP Miami", "subj": "COMBINED", "n": 1656, "p3": 49.4}, {"year": "2026", "network": "KIPP Jacksonville", "subj": "ELA", "n": 1600, "p3": 35.0}, {"year": "2026", "network": "KIPP Jacksonville", "subj": "MATH", "n": 1468, "p3": 33.3}, {"year": "2026", "network": "KIPP Jacksonville", "subj": "ALG1", "n": 231, "p3": 45.6}, {"year": "2026", "network": "KIPP Jacksonville", "subj": "COMBINED", "n": 3068, "p3": 34.2}, {"year": "2026", "network": "IDEA Jacksonville", "subj": "ELA", "n": 1439, "p3": 38.2}, {"year": "2026", "network": "IDEA Jacksonville", "subj": "MATH", "n": 1348, "p3": 44.8}, {"year": "2026", "network": "IDEA Jacksonville", "subj": "ALG1", "n": 91, "p3": 83.5}, {"year": "2026", "network": "IDEA Jacksonville", "subj": "COMBINED", "n": 2787, "p3": 41.4}, {"year": "2026", "network": "IDEA Tampa Bay", "subj": "ELA", "n": 1568, "p3": 40.3}, {"year": "2026", "network": "IDEA Tampa Bay", "subj": "MATH", "n": 1492, "p3": 39.3}, {"year": "2026", "network": "IDEA Tampa Bay", "subj": "ALG1", "n": 111, "p3": 62.3}, {"year": "2026", "network": "IDEA Tampa Bay", "subj": "COMBINED", "n": 3060, "p3": 39.8}]};
+const YEARS = DATA.years, NETS = DATA.networks;
+const RCOLOR={"KIPP Miami":"#E8743B","KIPP Jacksonville":"#C0392B","IDEA Jacksonville":"#2E6DB4","IDEA Tampa Bay":"#2E8B57"};
+const SUBJ_NAME={COMBINED:"ELA + Math",ELA:"ELA",MATH:"Math",ALG1:"Algebra 1 EOC"};
+// index: subj -> net -> year -> p3
+const IDX={};
+DATA.rows.forEach(r=>{(IDX[r.subj]=IDX[r.subj]||{}); (IDX[r.subj][r.network]=IDX[r.subj][r.network]||{})[r.year]=r.p3;});
+
+let subj="COMBINED";
+let on={}; NETS.forEach(n=>on[n]=true);
+let charts={};
+const active=()=>NETS.filter(n=>on[n]);
+const series=(sj,net)=>YEARS.map(y=>{const v=IDX[sj]&&IDX[sj][net]&&IDX[sj][net][y]; return v==null?null:v;});
+
+function buildToggles(){
+  const c=document.getElementById("regToggles"); c.innerHTML="";
+  NETS.forEach(n=>{const e=document.createElement("div");e.className="chip"+(on[n]?"":" off");
+    e.innerHTML=`<span class="dot" style="background:${RCOLOR[n]}"></span>${n}`;
+    e.onclick=()=>{on[n]=!on[n];e.classList.toggle("off");renderAll();};c.appendChild(e);});
+}
+function firstLast(sj,net){const s=series(sj,net);let f=null,l=null;
+  for(let i=0;i<s.length;i++){if(s[i]!=null){if(f==null)f={y:YEARS[i],v:s[i]};l={y:YEARS[i],v:s[i]};}}
+  return {f,l};}
+function lastYoY(sj,net){const s=series(sj,net);let vals=[];for(let i=0;i<s.length;i++)if(s[i]!=null)vals.push({y:YEARS[i],v:s[i]});
+  if(vals.length<2)return null;const a=vals[vals.length-2],b=vals[vals.length-1];return {from:a.y,to:b.y,d:b.v-a.v};}
+
+function renderKPIs(){
+  const c=document.getElementById("kpis");c.innerHTML="";
+  active().forEach(net=>{
+    const {f,l}=firstLast(subj,net); if(!l){return;}
+    const tot=l.v-f.v; const yo=lastYoY(subj,net);
+    const d=document.createElement("div");d.className="kpi";d.style.borderLeftColor=RCOLOR[net];
+    d.innerHTML=`<div class="name"><span class="dot" style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${RCOLOR[net]}"></span>${net}</div>
+      <div class="val">${l.v.toFixed(1)}%</div>
+      <div class="sub">${l.y} level &middot; since ${f.y}: <b class="${tot>=0?'pos':'neg'}">${tot>=0?'+':''}${tot.toFixed(1)} pp</b></div>
+      <div class="sub">latest YoY (${yo?yo.from+'→'+yo.to:''}): <b class="${yo&&yo.d>=0?'pos':'neg'}">${yo?(yo.d>=0?'+':'')+yo.d.toFixed(1)+' pp':'—'}</b></div>`;
+    c.appendChild(d);
+  });
+}
+function renderTrend(){
+  if(charts.trend)charts.trend.destroy();
+  const ds=active().map(net=>({label:net,data:series(subj,net),borderColor:RCOLOR[net],
+    backgroundColor:RCOLOR[net]+"22",borderWidth:3,tension:.2,pointRadius:5,pointHoverRadius:7,spanGaps:false}));
+  charts.trend=new Chart(document.getElementById("trendChart"),{type:"line",
+    data:{labels:YEARS,datasets:ds},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+      plugins:{legend:{position:"top",labels:{usePointStyle:true,padding:16}},
+        tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y==null?'—':c.parsed.y.toFixed(1)+'%'}`}}},
+      scales:{y:{beginAtZero:true,suggestedMax:60,ticks:{callback:v=>v+"%"}}}}});
+}
+function renderYoY(){
+  if(charts.yoy)charts.yoy.destroy();
+  const labels=YEARS.slice(1).map((y,i)=>YEARS[i].slice(2)+"→"+y.slice(2));
+  const ds=active().map(net=>{
+    const s=series(subj,net);const data=[];
+    for(let i=1;i<s.length;i++)data.push((s[i]!=null&&s[i-1]!=null)?+(s[i]-s[i-1]).toFixed(1):null);
+    return {label:net,data,backgroundColor:RCOLOR[net]+"DD",borderColor:RCOLOR[net],borderWidth:1,borderRadius:4};
+  });
+  charts.yoy=new Chart(document.getElementById("yoyChart"),{type:"bar",
+    data:{labels,datasets:ds},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:"top",labels:{usePointStyle:true,padding:16}},
+        tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y==null?'—':(c.parsed.y>=0?'+':'')+c.parsed.y+' pp'}`}}},
+      scales:{y:{ticks:{callback:v=>(v>0?'+':'')+v+' pp'},grid:{color:'#e5e9f0'}}}}});
+}
+function renderTable(){
+  let h="<thead><tr><th class='lt'>Network</th>";
+  YEARS.forEach(y=>h+=`<th>${y}</th>`); h+="<th>Total Δ</th></tr></thead><tbody>";
+  active().forEach(net=>{
+    const s=series(subj,net);const {f,l}=firstLast(subj,net);
+    h+=`<tr><td class='lt' style='color:${RCOLOR[net]}'>${net}</td>`;
+    for(let i=0;i<s.length;i++){
+      if(s[i]==null){h+="<td>—</td>";continue;}
+      let dl="";if(i>0&&s[i-1]!=null){const dd=s[i]-s[i-1];dl=`<div class='delta ${dd>=0?'up':'down'}'>${dd>=0?'+':''}${dd.toFixed(1)}</div>`;}
+      h+=`<td><div>${s[i].toFixed(1)}%</div>${dl}</td>`;
+    }
+    const tot=l&&f?l.v-f.v:null;
+    h+=`<td class='delta ${tot>=0?'up':'down'}'>${tot==null?'—':(tot>=0?'+':'')+tot.toFixed(1)+' pp'}</td></tr>`;
+  });
+  h+="</tbody>";document.getElementById("dataTable").innerHTML=h;
+}
+function renderAll(){
+  document.querySelectorAll(".subjName").forEach(e=>e.textContent=SUBJ_NAME[subj]);
+  document.getElementById("testnote").style.display = (subj==='ALG1')?'none':'block';
+  buildToggles();renderKPIs();renderTrend();renderYoY();renderTable();
+}
+document.querySelectorAll("#subjSeg button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#subjSeg button").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");subj=b.dataset.subj;renderAll();});
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#tabs button").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+  b.classList.add("active");document.getElementById("panel-"+b.dataset.tab).classList.add("active");});
+renderAll();
+</script>
+</body>
+</html>
