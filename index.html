@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KIPP vs IDEA — Florida 2026 FAST Dashboard (Grades 3–8)</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f4f6f9; --card:#fff; --ink:#15233b; --muted:#64748b; --line:#e5e9f0;
+  --km:#E8743B; /* KIPP Miami - orange */
+  --kj:#C0392B; /* KIPP Jacksonville - red */
+  --ij:#2E6DB4; /* IDEA Jacksonville - blue */
+  --it:#2E8B57; /* IDEA Tampa Bay - green */
+  --state:#94a3b8;
+  --radius:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.45}
+.wrap{max-width:1240px;margin:0 auto;padding:18px}
+header.hero{background:linear-gradient(135deg,#15233b,#243b5e);color:#fff;border-radius:var(--radius);padding:22px 26px;margin-bottom:16px}
+header.hero h1{font-size:21px;font-weight:700}
+header.hero p{font-size:13px;opacity:.85;margin-top:5px;max-width:880px}
+.controls{display:flex;flex-wrap:wrap;gap:18px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px;margin-bottom:16px}
+.controls .grp{display:flex;flex-direction:column;gap:6px}
+.controls label.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:7px 14px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+.seg button.active{background:var(--ink);color:#fff}
+.regtoggles{display:flex;flex-wrap:wrap;gap:10px}
+.chip{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;background:#fff;border:1px solid var(--line);border-radius:20px;padding:6px 12px;cursor:pointer;user-select:none}
+.chip .dot{width:11px;height:11px;border-radius:50%}
+.chip.off{opacity:.4;text-decoration:line-through}
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tabs button{border:1px solid var(--line);background:#fff;color:var(--muted);font-weight:600;font-size:13px;padding:9px 16px;border-radius:8px;cursor:pointer}
+.tabs button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.panel{display:none}
+.panel.active{display:block}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-left-width:5px;border-radius:var(--radius);padding:15px 18px}
+.kpi .name{font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px}
+.kpi .val{font-size:30px;font-weight:800;margin-top:6px}
+.kpi .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.kpi .sub b.pos{color:#16a34a}.kpi .sub b.neg{color:#dc2626}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px}
+.card h3{font-size:14px;font-weight:700;margin-bottom:4px}
+.card .hint{font-size:12px;color:var(--muted);margin-bottom:12px}
+.chartbox{position:relative;height:360px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);cursor:pointer;user-select:none}
+td.lt,th.lt{text-align:left}
+tbody tr:hover{background:#f8fafc}
+.cell{display:inline-block;min-width:34px;padding:3px 6px;border-radius:5px;font-weight:600}
+.tablefilters{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.tablefilters select{padding:7px 10px;border:1px solid var(--line);border-radius:7px;font-size:13px}
+.legend{font-size:12px;color:var(--muted);margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.swatch{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:middle;margin-right:4px}
+footer{font-size:12px;color:var(--muted);text-align:center;padding:14px 0 30px}
+footer a{color:var(--muted)}
+.netnote{font-size:12px;color:var(--muted);margin-top:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <h1>KIPP vs IDEA — Florida Spring 2026 FAST &amp; Algebra 1 (Grades 3–8)</h1>
+  <p>% of students scoring Level 3 or above (proficient/passing) on the Spring 2026 FAST PM3 assessment and the B.E.S.T. Algebra 1 EOC. Regions are enrollment-weighted averages of their campuses. Source: Florida Department of Education, 2026 school-level results.</p>
+</header>
+
+<div class="controls">
+  <div class="grp">
+    <label class="lbl">Subject</label>
+    <div class="seg" id="subjSeg">
+      <button data-subj="ELA" class="active">ELA</button>
+      <button data-subj="MATH">Math</button>
+      <button data-subj="ALG1">Algebra 1 EOC</button>
+    </div>
+  </div>
+  <div class="grp" style="flex:1">
+    <label class="lbl">Regions (click to show / hide)</label>
+    <div class="regtoggles" id="regToggles"></div>
+  </div>
+</div>
+
+<div class="tabs" id="tabs">
+  <button data-tab="overview" class="active">Overview</button>
+  <button data-tab="bygrade">By Grade</button>
+  <button data-tab="campus">Campus Heatmap</button>
+  <button data-tab="table">Data Table</button>
+</div>
+
+<!-- OVERVIEW -->
+<div class="panel active" id="panel-overview">
+  <div class="kpis" id="kpis"></div>
+  <div class="grid2">
+    <div class="card">
+      <h3>Region proficiency — <span class="subjName"></span></h3>
+      <div class="hint">Overall % proficient across grades 3–8 (enrollment-weighted), vs Florida state.</div>
+      <div class="chartbox"><canvas id="overallChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Network view — KIPP vs IDEA</h3>
+      <div class="hint">Each network's campuses pooled across grades 3–8. A like-for-like network comparison.</div>
+      <div class="chartbox"><canvas id="netChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- BY GRADE -->
+<div class="panel" id="panel-bygrade">
+  <div class="card">
+    <h3>Region trend by grade — <span class="subjName"></span></h3>
+    <div class="hint">Enrollment-weighted % proficient at each grade. Dashed grey = Florida state. Toggle regions above. (Algebra 1 is a single EOC point, not grade-leveled.)</div>
+    <div class="chartbox" style="height:420px"><canvas id="gradeChart"></canvas></div>
+  </div>
+</div>
+
+<!-- CAMPUS HEATMAP -->
+<div class="panel" id="panel-campus">
+  <div class="card">
+    <h3>Campus &times; Grade heatmap — <span class="subjName"></span></h3>
+    <div class="hint">Every campus, % proficient by grade. Greener = higher. Blank = grade not served or count suppressed (N&lt;10). Alg = Algebra 1 EOC.</div>
+    <div style="overflow-x:auto"><table id="heatTable"></table></div>
+    <div class="legend">
+      <span><span class="swatch" style="background:#d73027"></span>0–20%</span>
+      <span><span class="swatch" style="background:#fc8d59"></span>20–35%</span>
+      <span><span class="swatch" style="background:#fee08b"></span>35–50%</span>
+      <span><span class="swatch" style="background:#d9ef8b"></span>50–65%</span>
+      <span><span class="swatch" style="background:#91cf60"></span>65–80%</span>
+      <span><span class="swatch" style="background:#1a9850;color:#fff"></span>80%+</span>
+    </div>
+  </div>
+</div>
+
+<!-- DATA TABLE -->
+<div class="panel" id="panel-table">
+  <div class="card">
+    <h3>Full campus-level data</h3>
+    <div class="tablefilters">
+      <select id="fRegion"><option value="">All regions</option></select>
+      <select id="fSubject">
+        <option value="">All subjects</option>
+        <option value="ELA">ELA</option>
+        <option value="MATH">Math</option>
+        <option value="ALG1">Algebra 1 EOC</option>
+      </select>
+      <select id="fGrade"><option value="">All grades</option></select>
+    </div>
+    <div style="overflow-x:auto"><table id="dataTable"></table></div>
+  </div>
+</div>
+
+<footer>
+  Built from Florida DOE 2026 school results (<a href="https://www.fldoe.org/accountability/assessments/k-12-student-assessment/results/2026.stml" target="_blank" rel="noopener">fldoe.org</a>). Data pulled June 27, 2026. IDEA Lakeland is in Polk County, included within the IDEA Tampa Bay region.
+</footer>
+</div>
+
+<script>
+const DATA = {"rows": [{"subject": "ELA", "grade": "03", "region": "KIPP Miami", "campus": "KIPP Miami-Liberty City", "n": 146, "mean": 198, "p3": 49}, {"subject": "ELA", "grade": "03", "region": "KIPP Jacksonville", "campus": "KIPP V.O.I.C.E. Academy", "n": 95, "mean": 194, "p3": 39}, {"subject": "ELA", "grade": "03", "region": "KIPP Jacksonville", "campus": "KIPP Jacksonville K-12", "n": 88, "mean": 192, "p3": 39}, {"subject": "ELA", "grade": "03", "region": "KIPP Jacksonville", "campus": "KIPP Impact Academy", "n": 98, "mean": 183, "p3": 19}, {"subject": "ELA", "grade": "04", "region": "KIPP Miami", "campus": "KIPP Miami-Liberty City", "n": 143, "mean": 208, "p3": 48}, {"subject": "ELA", "grade": "04", "region": "KIPP Jacksonville", "campus": "KIPP V.O.I.C.E. Academy", "n": 87, "mean": 199, "p3": 25}, {"subject": "ELA", "grade": "04", "region": "KIPP Jacksonville", "campus": "KIPP Jacksonville K-12", "n": 76, "mean": 194, "p3": 16}, {"subject": "ELA", "grade": "04", "region": "KIPP Jacksonville", "campus": "KIPP Impact Academy", "n": 72, "mean": 199, "p3": 28}, {"subject": "ELA", "grade": "05", "region": "KIPP Miami", "campus": "KIPP Miami-Liberty City", "n": 138, "mean": 216, "p3": 41}, {"subject": "ELA", "grade": "05", "region": "KIPP Jacksonville", "campus": "KIPP V.O.I.C.E. Academy", "n": 77, "mean": 211, "p3": 31}, {"subject": "ELA", "grade": "05", "region": "KIPP Jacksonville", "campus": "KIPP Jacksonville K-12", "n": 83, "mean": 212, "p3": 36}, {"subject": "ELA", "grade": "05", "region": "KIPP Jacksonville", "campus": "KIPP Impact Academy", "n": 88, "mean": 203, "p3": 23}, {"subject": "ELA", "grade": "06", "region": "KIPP Miami", "campus": "KIPP Miami-Liberty City", "n": 155, "mean": 221, "p3": 47}, {"subject": "ELA", "grade": "06", "region": "KIPP Jacksonville", "campus": "KIPP V.O.I.C.E. Academy", "n": 84, "mean": 221, "p3": 44}, {"subject": "ELA", "grade": "06", "region": "KIPP Jacksonville", "campus": "KIPP Jacksonville K-12", "n": 102, "mean": 213, "p3": 29}, {"subject": "ELA", "grade": "06", "region": "KIPP Jacksonville", "campus": "KIPP Impact Academy", "n": 89, "mean": 222, "p3": 53}, {"subject": "ELA", "grade": "07", "region": "KIPP Miami", "campus": "KIPP Miami-Liberty City", "n": 144, "mean": 228, "p3": 46}, {"subject": "ELA", "grade": "07", "region": "KIPP Jacksonville", "campus": "KIPP V.O.I.C.E. Academy", "n": 86, "mean": 220, "p3": 29}, {"subject": "ELA", "grade": "07", "region": "KIPP Jacksonville", "campus": "KIPP Jacksonville K-12", "n": 88, "mean": 215, "p3": 24}, {"subject": "ELA", "grade": "07", "region": "KIPP Jacksonville", "campus": "KIPP Impact Academy", "n": 98, "mean": 229, "p3": 50}, {"subject": "ELA", "grade": "08", "region": "KIPP Miami", "campus": "KIPP Miami-Liberty City", "n": 149, "mean": 235, "p3": 56}, {"subject": "ELA", "grade": "08", "region": "KIPP Jacksonville", "campus": "KIPP V.O.I.C.E. Academy", "n": 82, "mean": 236, "p3": 56}, {"subject": "ELA", "grade": "08", "region": "KIPP Jacksonville", "campus": "KIPP Jacksonville K-12", "n": 99, "mean": 228, "p3": 33}, {"subject": "ELA", "grade": "08", "region": "KIPP Jacksonville", "campus": "KIPP Impact Academy", "n": 108, "mean": 235, "p3": 50}, {"subject": "MATH", "grade": "03", "region": "KIPP Miami", "campus": "KIPP Miami-Liberty City", "n": 146, "mean": 200, "p3": 61}, {"subject": "MATH", "grade": "03", "region": "KIPP Jacksonville", "campus": "KIPP V.O.I.C.E. Academy", "n": 92, "mean": 194, "p3": 47}, {"subject": "MATH", "grade": "03", "region": "KIPP Jacksonville", "campus": "KIPP Jacksonville K-12", "n": 88, "mean": 193, "p3": 47}, {"subject": "MATH", "grade": "03", "region": "KIPP Jacksonville", "campus": "KIPP Impact Academy", "n": 95, "mean": 189, "p3": 29}, {"subject": "MATH", "grade": "04", "region": "KIPP Miami", "campus": "KIPP Miami-Liberty City", "n": 145, "mean": 209, "p3": 46}, {"subject": "MATH", "grade": "04", "region": "KIPP Jacksonville", "campus": "KIPP V.O.I.C.E. Academy", "n": 86, "mean": 200, "p3": 29}, {"subject": "MATH", "grade": "04", "region": "KIPP Jacksonville", "campus": "KIPP Jacksonville K-12", "n": 75, "mean": 196, "p3": 21}, {"subject": "MATH", "grade": "04", "region": "KIPP Jacksonville", "campus": "KIPP Impact Academy", "n": 73, "mean": 197, "p3": 21}, {"subject": "MATH", "grade": "05", "region": "KIPP Miami", "campus": "KIPP Miami-Liberty City", "n": 136, "mean": 211, "p3": 28}, {"subject": "MATH", "grade": "05", "region": "KIPP Jacksonville", "campus": "KIPP V.O.I.C.E. Academy", "n": 76, "mean": 203, "p3": 12}, {"subject": "MATH", "grade": "05", "region": "KIPP Jacksonville", "campus": "KIPP Jacksonville K-12", "n": 83, "mean": 208, "p3": 30}, {"subject": "MATH", "grade": "05", "region": "KIPP Jacksonville", "campus": "KIPP Impact Academy", "n": 88, "mean": 204, "p3": 20}, {"subject": "MATH", "grade": "06", "region": "KIPP Miami", "campus": "KIPP Miami-Liberty City", "n": 154, "mean": 231, "p3": 60}, {"subject": "MATH", "grade": "06", "region": "KIPP Jacksonville", "campus": "KIPP V.O.I.C.E. Academy", "n": 85, "mean": 222, "p3": 31}, {"subject": "MATH", "grade": "06", "region": "KIPP Jacksonville", "campus": "KIPP Jacksonville K-12", "n": 103, "mean": 215, "p3": 18}, {"subject": "MATH", "grade": "06", "region": "KIPP Jacksonville", "campus": "KIPP Impact Academy", "n": 88, "mean": 230, "p3": 55}, {"subject": "MATH", "grade": "07", "region": "KIPP Miami", "campus": "KIPP Miami-Liberty City", "n": 141, "mean": 241, "p3": 67}, {"subject": "MATH", "grade": "07", "region": "KIPP Jacksonville", "campus": "KIPP V.O.I.C.E. Academy", "n": 84, "mean": 231, "p3": 44}, {"subject": "MATH", "grade": "07", "region": "KIPP Jacksonville", "campus": "KIPP Jacksonville K-12", "n": 86, "mean": 226, "p3": 29}, {"subject": "MATH", "grade": "07", "region": "KIPP Jacksonville", "campus": "KIPP Impact Academy", "n": 96, "mean": 244, "p3": 66}, {"subject": "MATH", "grade": "08", "region": "KIPP Miami", "campus": "KIPP Miami-Liberty City", "n": 59, "mean": 231, "p3": 31}, {"subject": "MATH", "grade": "08", "region": "KIPP Jacksonville", "campus": "KIPP V.O.I.C.E. Academy", "n": 51, "mean": 234, "p3": 27}, {"subject": "MATH", "grade": "08", "region": "KIPP Jacksonville", "campus": "KIPP Jacksonville K-12", "n": 71, "mean": 233, "p3": 23}, {"subject": "MATH", "grade": "08", "region": "KIPP Jacksonville", "campus": "KIPP Impact Academy", "n": 48, "mean": 239, "p3": 42}, {"subject": "ALG1", "grade": "EOC", "region": "KIPP Miami", "campus": "KIPP Miami-Liberty City", "n": 84, "mean": 416, "p3": 88}, {"subject": "ALG1", "grade": "EOC", "region": "KIPP Jacksonville", "campus": "KIPP V.O.I.C.E. Academy", "n": 30, "mean": 400, "p3": 57}, {"subject": "ALG1", "grade": "EOC", "region": "KIPP Jacksonville", "campus": "KIPP Jacksonville K-12", "n": 139, "mean": 389, "p3": 34}, {"subject": "ALG1", "grade": "EOC", "region": "KIPP Jacksonville", "campus": "KIPP Impact Academy", "n": 62, "mean": 405, "p3": 66}, {"subject": "ELA", "grade": "03", "region": "IDEA Jacksonville", "campus": "IDEA Compass", "n": 75, "mean": 188, "p3": 28}, {"subject": "ELA", "grade": "03", "region": "IDEA Jacksonville", "campus": "IDEA Bassett", "n": 115, "mean": 190, "p3": 40}, {"subject": "ELA", "grade": "03", "region": "IDEA Jacksonville", "campus": "IDEA River Bluff", "n": 118, "mean": 191, "p3": 35}, {"subject": "ELA", "grade": "03", "region": "IDEA Tampa Bay", "campus": "IDEA Victory", "n": 137, "mean": 187, "p3": 31}, {"subject": "ELA", "grade": "03", "region": "IDEA Tampa Bay", "campus": "IDEA Hope", "n": 88, "mean": 189, "p3": 34}, {"subject": "ELA", "grade": "03", "region": "IDEA Tampa Bay", "campus": "IDEA Lakeland", "n": 79, "mean": 192, "p3": 41}, {"subject": "ELA", "grade": "04", "region": "IDEA Jacksonville", "campus": "IDEA Compass", "n": 58, "mean": 198, "p3": 26}, {"subject": "ELA", "grade": "04", "region": "IDEA Jacksonville", "campus": "IDEA Bassett", "n": 96, "mean": 212, "p3": 54}, {"subject": "ELA", "grade": "04", "region": "IDEA Jacksonville", "campus": "IDEA River Bluff", "n": 87, "mean": 202, "p3": 32}, {"subject": "ELA", "grade": "04", "region": "IDEA Tampa Bay", "campus": "IDEA Victory", "n": 108, "mean": 207, "p3": 39}, {"subject": "ELA", "grade": "04", "region": "IDEA Tampa Bay", "campus": "IDEA Hope", "n": 70, "mean": 205, "p3": 36}, {"subject": "ELA", "grade": "04", "region": "IDEA Tampa Bay", "campus": "IDEA Lakeland", "n": 67, "mean": 210, "p3": 42}, {"subject": "ELA", "grade": "05", "region": "IDEA Jacksonville", "campus": "IDEA Compass", "n": 61, "mean": 209, "p3": 31}, {"subject": "ELA", "grade": "05", "region": "IDEA Jacksonville", "campus": "IDEA Bassett", "n": 97, "mean": 210, "p3": 30}, {"subject": "ELA", "grade": "05", "region": "IDEA Jacksonville", "campus": "IDEA River Bluff", "n": 77, "mean": 212, "p3": 40}, {"subject": "ELA", "grade": "05", "region": "IDEA Tampa Bay", "campus": "IDEA Victory", "n": 95, "mean": 214, "p3": 43}, {"subject": "ELA", "grade": "05", "region": "IDEA Tampa Bay", "campus": "IDEA Hope", "n": 82, "mean": 218, "p3": 49}, {"subject": "ELA", "grade": "05", "region": "IDEA Tampa Bay", "campus": "IDEA Lakeland", "n": 75, "mean": 216, "p3": 44}, {"subject": "ELA", "grade": "06", "region": "IDEA Jacksonville", "campus": "IDEA Compass", "n": 86, "mean": 221, "p3": 52}, {"subject": "ELA", "grade": "06", "region": "IDEA Jacksonville", "campus": "IDEA Bassett", "n": 111, "mean": 218, "p3": 41}, {"subject": "ELA", "grade": "06", "region": "IDEA Jacksonville", "campus": "IDEA River Bluff", "n": 102, "mean": 213, "p3": 36}, {"subject": "ELA", "grade": "06", "region": "IDEA Tampa Bay", "campus": "IDEA Victory", "n": 128, "mean": 209, "p3": 31}, {"subject": "ELA", "grade": "06", "region": "IDEA Tampa Bay", "campus": "IDEA Hope", "n": 91, "mean": 219, "p3": 45}, {"subject": "ELA", "grade": "06", "region": "IDEA Tampa Bay", "campus": "IDEA Lakeland", "n": 91, "mean": 217, "p3": 38}, {"subject": "ELA", "grade": "07", "region": "IDEA Jacksonville", "campus": "IDEA Bassett", "n": 78, "mean": 223, "p3": 31}, {"subject": "ELA", "grade": "07", "region": "IDEA Jacksonville", "campus": "IDEA River Bluff", "n": 80, "mean": 218, "p3": 29}, {"subject": "ELA", "grade": "07", "region": "IDEA Tampa Bay", "campus": "IDEA Victory", "n": 128, "mean": 226, "p3": 45}, {"subject": "ELA", "grade": "07", "region": "IDEA Tampa Bay", "campus": "IDEA Hope", "n": 48, "mean": 229, "p3": 52}, {"subject": "ELA", "grade": "07", "region": "IDEA Tampa Bay", "campus": "IDEA Lakeland", "n": 75, "mean": 230, "p3": 52}, {"subject": "ELA", "grade": "08", "region": "IDEA Jacksonville", "campus": "IDEA Bassett", "n": 102, "mean": 236, "p3": 43}, {"subject": "ELA", "grade": "08", "region": "IDEA Jacksonville", "campus": "IDEA River Bluff", "n": 96, "mean": 235, "p3": 52}, {"subject": "ELA", "grade": "08", "region": "IDEA Tampa Bay", "campus": "IDEA Victory", "n": 129, "mean": 228, "p3": 40}, {"subject": "ELA", "grade": "08", "region": "IDEA Tampa Bay", "campus": "IDEA Hope", "n": 77, "mean": 228, "p3": 39}, {"subject": "MATH", "grade": "03", "region": "IDEA Jacksonville", "campus": "IDEA Compass", "n": 76, "mean": 193, "p3": 43}, {"subject": "MATH", "grade": "03", "region": "IDEA Jacksonville", "campus": "IDEA Bassett", "n": 113, "mean": 197, "p3": 53}, {"subject": "MATH", "grade": "03", "region": "IDEA Jacksonville", "campus": "IDEA River Bluff", "n": 116, "mean": 191, "p3": 41}, {"subject": "MATH", "grade": "03", "region": "IDEA Tampa Bay", "campus": "IDEA Victory", "n": 134, "mean": 188, "p3": 34}, {"subject": "MATH", "grade": "03", "region": "IDEA Tampa Bay", "campus": "IDEA Hope", "n": 87, "mean": 188, "p3": 26}, {"subject": "MATH", "grade": "03", "region": "IDEA Tampa Bay", "campus": "IDEA Lakeland", "n": 79, "mean": 186, "p3": 29}, {"subject": "MATH", "grade": "04", "region": "IDEA Jacksonville", "campus": "IDEA Compass", "n": 58, "mean": 199, "p3": 28}, {"subject": "MATH", "grade": "04", "region": "IDEA Jacksonville", "campus": "IDEA Bassett", "n": 97, "mean": 216, "p3": 67}, {"subject": "MATH", "grade": "04", "region": "IDEA Jacksonville", "campus": "IDEA River Bluff", "n": 87, "mean": 201, "p3": 29}, {"subject": "MATH", "grade": "04", "region": "IDEA Tampa Bay", "campus": "IDEA Victory", "n": 105, "mean": 204, "p3": 31}, {"subject": "MATH", "grade": "04", "region": "IDEA Tampa Bay", "campus": "IDEA Hope", "n": 71, "mean": 206, "p3": 39}, {"subject": "MATH", "grade": "04", "region": "IDEA Tampa Bay", "campus": "IDEA Lakeland", "n": 67, "mean": 204, "p3": 31}, {"subject": "MATH", "grade": "05", "region": "IDEA Jacksonville", "campus": "IDEA Compass", "n": 63, "mean": 204, "p3": 24}, {"subject": "MATH", "grade": "05", "region": "IDEA Jacksonville", "campus": "IDEA Bassett", "n": 97, "mean": 218, "p3": 44}, {"subject": "MATH", "grade": "05", "region": "IDEA Jacksonville", "campus": "IDEA River Bluff", "n": 77, "mean": 210, "p3": 31}, {"subject": "MATH", "grade": "05", "region": "IDEA Tampa Bay", "campus": "IDEA Victory", "n": 94, "mean": 214, "p3": 33}, {"subject": "MATH", "grade": "05", "region": "IDEA Tampa Bay", "campus": "IDEA Hope", "n": 82, "mean": 216, "p3": 41}, {"subject": "MATH", "grade": "05", "region": "IDEA Tampa Bay", "campus": "IDEA Lakeland", "n": 75, "mean": 212, "p3": 31}, {"subject": "MATH", "grade": "06", "region": "IDEA Jacksonville", "campus": "IDEA Compass", "n": 86, "mean": 231, "p3": 55}, {"subject": "MATH", "grade": "06", "region": "IDEA Jacksonville", "campus": "IDEA Bassett", "n": 111, "mean": 229, "p3": 52}, {"subject": "MATH", "grade": "06", "region": "IDEA Jacksonville", "campus": "IDEA River Bluff", "n": 101, "mean": 223, "p3": 47}, {"subject": "MATH", "grade": "06", "region": "IDEA Tampa Bay", "campus": "IDEA Victory", "n": 130, "mean": 221, "p3": 35}, {"subject": "MATH", "grade": "06", "region": "IDEA Tampa Bay", "campus": "IDEA Hope", "n": 93, "mean": 227, "p3": 47}, {"subject": "MATH", "grade": "06", "region": "IDEA Tampa Bay", "campus": "IDEA Lakeland", "n": 91, "mean": 218, "p3": 30}, {"subject": "MATH", "grade": "07", "region": "IDEA Jacksonville", "campus": "IDEA Bassett", "n": 76, "mean": 232, "p3": 46}, {"subject": "MATH", "grade": "07", "region": "IDEA Jacksonville", "campus": "IDEA River Bluff", "n": 75, "mean": 229, "p3": 47}, {"subject": "MATH", "grade": "07", "region": "IDEA Tampa Bay", "campus": "IDEA Victory", "n": 129, "mean": 238, "p3": 61}, {"subject": "MATH", "grade": "07", "region": "IDEA Tampa Bay", "campus": "IDEA Hope", "n": 49, "mean": 245, "p3": 65}, {"subject": "MATH", "grade": "07", "region": "IDEA Tampa Bay", "campus": "IDEA Lakeland", "n": 74, "mean": 231, "p3": 49}, {"subject": "MATH", "grade": "08", "region": "IDEA Jacksonville", "campus": "IDEA Bassett", "n": 58, "mean": 242, "p3": 52}, {"subject": "MATH", "grade": "08", "region": "IDEA Jacksonville", "campus": "IDEA River Bluff", "n": 57, "mean": 236, "p3": 39}, {"subject": "MATH", "grade": "08", "region": "IDEA Tampa Bay", "campus": "IDEA Victory", "n": 86, "mean": 238, "p3": 42}, {"subject": "MATH", "grade": "08", "region": "IDEA Tampa Bay", "campus": "IDEA Hope", "n": 46, "mean": 242, "p3": 57}, {"subject": "ALG1", "grade": "EOC", "region": "IDEA Jacksonville", "campus": "IDEA Bassett", "n": 46, "mean": 418, "p3": 83}, {"subject": "ALG1", "grade": "EOC", "region": "IDEA Jacksonville", "campus": "IDEA River Bluff", "n": 45, "mean": 420, "p3": 84}, {"subject": "ALG1", "grade": "EOC", "region": "IDEA Tampa Bay", "campus": "IDEA Victory", "n": 82, "mean": 398, "p3": 49}, {"subject": "ALG1", "grade": "EOC", "region": "IDEA Tampa Bay", "campus": "IDEA Hope", "n": 29, "mean": 430, "p3": 100}], "state": {"ELA|03": 60, "ELA|04": 60, "ELA|05": 61, "ELA|06": 62, "ELA|07": 62, "ELA|08": 60, "MATH|03": 66, "MATH|04": 65, "MATH|05": 62, "MATH|06": 60, "MATH|07": 53, "MATH|08": 61, "ALG1|EOC": 63}};
+const ROWS = DATA.rows, STATE = DATA.state;
+const REGIONS = ["KIPP Miami","KIPP Jacksonville","IDEA Jacksonville","IDEA Tampa Bay"];
+const RCOLOR = {"KIPP Miami":"#E8743B","KIPP Jacksonville":"#C0392B","IDEA Jacksonville":"#2E6DB4","IDEA Tampa Bay":"#2E8B57"};
+const NETWORK = r => r.startsWith("KIPP") ? "KIPP" : "IDEA";
+const SUBJ_NAME = {ELA:"ELA",MATH:"Math",ALG1:"Algebra 1 EOC"};
+const GRADES = ["03","04","05","06","07","08"];
+const GLABEL = {"03":"Gr 3","04":"Gr 4","05":"Gr 5","06":"Gr 6","07":"Gr 7","08":"Gr 8","EOC":"Alg 1"};
+
+let subj = "ELA";
+let regOn = {}; REGIONS.forEach(r=>regOn[r]=true);
+let charts = {};
+
+// ---- weighted helpers ----
+function wavg(rows){ let n=0,s=0; rows.forEach(r=>{n+=r.n; s+=r.n*r.p3;}); return n?s/n:null; }
+function regionOverall(region,subject){ return wavg(ROWS.filter(r=>r.region===region&&r.subject===subject)); }
+function regionGrade(region,subject,grade){ return wavg(ROWS.filter(r=>r.region===region&&r.subject===subject&&r.grade===grade)); }
+function networkOverall(net,subject){ return wavg(ROWS.filter(r=>NETWORK(r.region)===net&&r.subject===subject)); }
+function stateVal(subject,grade){ const k=subject+"|"+grade; return STATE[k]!=null?STATE[k]:null; }
+function stateOverall(subject){ // simple mean of available grade-state values for the subject
+  if(subject==="ALG1") return STATE["ALG1|EOC"];
+  const vs=GRADES.map(g=>STATE[subject+"|"+g]).filter(v=>v!=null); return vs.reduce((a,b)=>a+b,0)/vs.length;
+}
+function heatColor(v){ if(v==null) return "transparent";
+  if(v<20)return"#d73027"; if(v<35)return"#fc8d59"; if(v<50)return"#fee08b"; if(v<65)return"#d9ef8b"; if(v<80)return"#91cf60"; return"#1a9850"; }
+
+// ---- build controls ----
+function buildRegToggles(){
+  const c=document.getElementById("regToggles"); c.innerHTML="";
+  REGIONS.forEach(r=>{
+    const el=document.createElement("div"); el.className="chip"+(regOn[r]?"":" off");
+    el.innerHTML=`<span class="dot" style="background:${RCOLOR[r]}"></span>${r}`;
+    el.onclick=()=>{regOn[r]=!regOn[r]; el.classList.toggle("off"); renderAll();};
+    c.appendChild(el);
+  });
+}
+function activeRegions(){ return REGIONS.filter(r=>regOn[r]); }
+
+// ---- KPIs ----
+function renderKPIs(){
+  const c=document.getElementById("kpis"); c.innerHTML="";
+  const st=stateOverall(subj);
+  activeRegions().forEach(r=>{
+    const v=regionOverall(r,subj);
+    const gap=v==null?null:(v-st);
+    const div=document.createElement("div"); div.className="kpi"; div.style.borderLeftColor=RCOLOR[r];
+    div.innerHTML=`<div class="name"><span class="dot" style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${RCOLOR[r]}"></span>${r}</div>
+      <div class="val">${v==null?"—":v.toFixed(1)+"%"}</div>
+      <div class="sub">${gap==null?"":`vs state <b class="${gap>=0?'pos':'neg'}">${gap>=0?'+':''}${gap.toFixed(1)} pp</b>`}</div>`;
+    c.appendChild(div);
+  });
+  const div=document.createElement("div"); div.className="kpi"; div.style.borderLeftColor="#94a3b8";
+  div.innerHTML=`<div class="name"><span class="dot" style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#94a3b8"></span>Florida State</div>
+    <div class="val">${st.toFixed(1)}%</div><div class="sub">benchmark (all students)</div>`;
+  c.appendChild(div);
+}
+
+// ---- Overview charts ----
+function renderOverall(){
+  const regs=activeRegions();
+  const labels=regs.concat(["Florida State"]);
+  const vals=regs.map(r=>regionOverall(r,subj)).concat([stateOverall(subj)]);
+  const colors=regs.map(r=>RCOLOR[r]).concat(["#94a3b8"]);
+  drawBar("overallChart","overall",labels,vals,colors,true);
+}
+function renderNet(){
+  const labels=["KIPP","IDEA","Florida State"];
+  const vals=[networkOverall("KIPP",subj),networkOverall("IDEA",subj),stateOverall(subj)];
+  drawBar("netChart","net",labels,vals,["#C0392B","#2E6DB4","#94a3b8"],true);
+}
+function drawBar(canvasId,key,labels,data,colors,horizontal){
+  if(charts[key]) charts[key].destroy();
+  charts[key]=new Chart(document.getElementById(canvasId),{
+    type:"bar",
+    data:{labels,datasets:[{data,backgroundColor:colors.map(c=>c+"DD"),borderColor:colors,borderWidth:1,borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:horizontal?"y":"x",
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>(c.parsed[horizontal?'x':'y']).toFixed(1)+"% proficient"}}},
+      scales:{[horizontal?'x':'y']:{beginAtZero:true,max:100,ticks:{callback:v=>v+"%"}}}}
+  });
+}
+
+// ---- By grade chart ----
+function renderGrade(){
+  if(charts.grade) charts.grade.destroy();
+  if(subj==="ALG1"){
+    const regs=activeRegions();
+    charts.grade=new Chart(document.getElementById("gradeChart"),{
+      type:"bar",
+      data:{labels:regs.concat(["Florida State"]),datasets:[{data:regs.map(r=>regionOverall(r,"ALG1")).concat([STATE["ALG1|EOC"]]),
+        backgroundColor:regs.map(r=>RCOLOR[r]+"DD").concat(["#94a3b8DD"]),borderRadius:6}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y.toFixed(1)+"%"}}},scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+"%"}}}}
+    });
+    return;
+  }
+  const labels=GRADES.map(g=>GLABEL[g]);
+  const ds=activeRegions().map(r=>({label:r,data:GRADES.map(g=>regionGrade(r,subj,g)),
+    borderColor:RCOLOR[r],backgroundColor:RCOLOR[r]+"22",borderWidth:3,tension:.25,pointRadius:4,pointHoverRadius:6,spanGaps:true}));
+  ds.push({label:"Florida State",data:GRADES.map(g=>stateVal(subj,g)),borderColor:"#94a3b8",borderDash:[6,5],borderWidth:2,pointRadius:0,tension:.25});
+  charts.grade=new Chart(document.getElementById("gradeChart"),{
+    type:"line",data:{labels,datasets:ds},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+      plugins:{legend:{position:"top",labels:{usePointStyle:true,padding:16}},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y==null?'—':c.parsed.y.toFixed(1)+'%'}`}}},
+      scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+"%"}}}}
+  });
+}
+
+// ---- Campus heatmap ----
+function renderHeat(){
+  const cols = subj==="ALG1" ? ["EOC"] : GRADES;
+  let html="<thead><tr><th class='lt'>Campus</th><th class='lt'>Region</th>";
+  cols.forEach(g=>html+=`<th>${GLABEL[g]}</th>`); html+="<th>Overall</th></tr></thead><tbody>";
+  // campuses ordered by region
+  const camps=[];
+  activeRegions().forEach(r=>{
+    [...new Set(ROWS.filter(x=>x.region===r).map(x=>x.campus))].forEach(c=>camps.push({campus:c,region:r}));
+  });
+  camps.forEach(({campus,region})=>{
+    html+=`<tr><td class='lt'>${campus}</td><td class='lt' style='color:${RCOLOR[region]};font-weight:600'>${region}</td>`;
+    cols.forEach(g=>{
+      const row=ROWS.find(x=>x.campus===campus&&x.subject===subj&&x.grade===g);
+      const v=row?row.p3:null;
+      html+=`<td>${v==null?"":`<span class='cell' style='background:${heatColor(v)};${v>=80?'color:#fff':''}'>${v}</span>`}</td>`;
+    });
+    const ov=wavg(ROWS.filter(x=>x.campus===campus&&x.subject===subj));
+    html+=`<td>${ov==null?"":`<b>${ov.toFixed(0)}</b>`}</td></tr>`;
+  });
+  html+="</tbody>";
+  document.getElementById("heatTable").innerHTML=html;
+}
+
+// ---- Data table ----
+let sortKey="p3", sortDir=-1;
+function renderTable(){
+  const fr=document.getElementById("fRegion").value, fs=document.getElementById("fSubject").value, fg=document.getElementById("fGrade").value;
+  let rows=ROWS.filter(r=>(!fr||r.region===fr)&&(!fs||r.subject===fs)&&(!fg||r.grade===fg));
+  rows=rows.map(r=>({...r, subjL:SUBJ_NAME[r.subject], gradeL:GLABEL[r.grade], st:stateVal(r.subject,r.grade), gap:r.p3-(stateVal(r.subject,r.grade))}));
+  rows.sort((a,b)=>{let x=a[sortKey],y=b[sortKey]; if(typeof x==="string"){return sortDir*x.localeCompare(y);} return sortDir*((x||0)-(y||0));});
+  const cols=[["region","Region","lt"],["campus","Campus","lt"],["subjL","Subject","lt"],["gradeL","Grade",""],["n","N",""],["mean","Mean Scale",""],["p3","% L3+",""],["st","State %",""],["gap","vs State (pp)",""]];
+  let html="<thead><tr>";
+  cols.forEach(([k,l,cls])=>html+=`<th class='${cls}' data-k='${k}'>${l}${sortKey===k?(sortDir<0?" ▼":" ▲"):""}</th>`);
+  html+="</tr></thead><tbody>";
+  rows.forEach(r=>{
+    html+=`<tr><td class='lt' style='color:${RCOLOR[r.region]};font-weight:600'>${r.region}</td><td class='lt'>${r.campus}</td><td class='lt'>${r.subjL}</td><td>${r.gradeL}</td><td>${r.n}</td><td>${r.mean}</td>`+
+      `<td><span class='cell' style='background:${heatColor(r.p3)};${r.p3>=80?'color:#fff':''}'>${r.p3}</span></td>`+
+      `<td>${r.st!=null?r.st:""}</td><td style='color:${r.gap>=0?'#16a34a':'#dc2626'};font-weight:600'>${r.gap>=0?'+':''}${r.gap.toFixed(0)}</td></tr>`;
+  });
+  html+="</tbody>";
+  const t=document.getElementById("dataTable"); t.innerHTML=html;
+  t.querySelectorAll("th").forEach(th=>th.onclick=()=>{const k=th.dataset.k; if(sortKey===k)sortDir*=-1; else{sortKey=k;sortDir=-1;} renderTable();});
+}
+
+// ---- render orchestration ----
+function renderAll(){
+  document.querySelectorAll(".subjName").forEach(e=>e.textContent=SUBJ_NAME[subj]);
+  buildRegToggles();
+  renderKPIs(); renderOverall(); renderNet(); renderGrade(); renderHeat(); renderTable();
+}
+
+// init filters
+function initFilters(){
+  const fr=document.getElementById("fRegion"); REGIONS.forEach(r=>fr.innerHTML+=`<option>${r}</option>`);
+  const fg=document.getElementById("fGrade"); [["03","Gr 3"],["04","Gr 4"],["05","Gr 5"],["06","Gr 6"],["07","Gr 7"],["08","Gr 8"],["EOC","Algebra 1"]].forEach(([v,l])=>fg.innerHTML+=`<option value='${v}'>${l}</option>`);
+  ["fRegion","fSubject","fGrade"].forEach(id=>document.getElementById(id).onchange=renderTable);
+}
+// subject segmented
+document.querySelectorAll("#subjSeg button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#subjSeg button").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active"); subj=b.dataset.subj; renderAll();
+});
+// tabs
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#tabs button").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+  b.classList.add("active"); document.getElementById("panel-"+b.dataset.tab).classList.add("active");
+});
+
+initFilters();
+renderAll();
+</script>
+</body>
+</html>
